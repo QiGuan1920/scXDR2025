@@ -1,4 +1,3 @@
-
 import dgl
 import torch
 import torch.nn as nn
@@ -39,50 +38,50 @@ class HeteroRGCN(nn.Module):
 
 
 class HeteroMLPPredictor(nn.Module):
-	def __init__(self, in_dims, n_classes):
-		super().__init__()
-		self.W1 = nn.Linear(in_dims * 2, in_dims)
-		self.W2 = nn.Linear(in_dims, n_classes)
+    def __init__(self, in_dims, n_classes):
+        super().__init__()
+        self.W1 = nn.Linear(in_dims * 2, in_dims)
+        self.W2 = nn.Linear(in_dims, n_classes)
 
-	def apply_edges(self, edges):
-		x = torch.cat([edges.src['h'], edges.dst['h']], 1)
-		y = torch.relu(self.W1(x))
-		y = self.W2(y)
+    def apply_edges(self, edges):
+        x = torch.cat([edges.src['h'], edges.dst['h']], 1)
+        y = torch.relu(self.W1(x))
+        y = self.W2(y)
         
-		return {'score': y}
+        return {'score': y}
 
-	def forward(self, graph, h, etype):
-		# h contains the node representations for each edge type computed from
-		# the GNN for heterogeneous graphs defined in the node classification
-		# section (Section 5.1).
-		with graph.local_scope():
-			graph.ndata['h'] = h   # assigns 'h' of all node types in one shot
-			graph.apply_edges(self.apply_edges, etype=etype)
-			return graph.edata['score']
+    def forward(self, graph, h, etype):
+        # h contains the node representations for each edge type computed from
+        # the GNN for heterogeneous graphs defined in the node classification
+        # section (Section 5.1).
+        with graph.local_scope():
+            graph.ndata['h'] = h   # assigns 'h' of all node types in one shot
+            graph.apply_edges(self.apply_edges, etype=etype)
+            return graph.edata['score']
 
 
 class HeteroDotProductPredictor(nn.Module):
-	def forward(self, graph, h, etype):
-		# h contains the node representations for each node type computed from
-		# the GNN defined in the previous section (Section 5.1).
-		with graph.local_scope():
-			graph.ndata['h'] = h
-			graph.apply_edges(fn.u_dot_v('h', 'h', 'score'), etype=etype)
-			return graph.edges[etype].data['score']
+    def forward(self, graph, h, etype):
+        # h contains the node representations for each node type computed from
+        # the GNN defined in the previous section (Section 5.1).
+        with graph.local_scope():
+            graph.ndata['h'] = h
+            graph.apply_edges(fn.u_dot_v('h', 'h', 'score'), etype=etype)
+            return graph.edges[etype].data['score']
 
 
 def construct_negative_graph(graph, k, etype):
     utype, _, vtype = etype
     src, dst = graph.edges(etype=etype)
     
-    # 获取图中不存在的边
+    # Get edges that do not exist in the graph
     neg_src = []
     neg_dst = []
     edges_set = set(zip(src.tolist(), dst.tolist()))
     
     for i in range(len(src)):
         while True:
-            # 生成随机的负样本
+            # Generate random negative samples
             neg_dst_node = torch.randint(0, graph.number_of_nodes(vtype), (k,))
             for j in range(k):
                 if (src[i], neg_dst_node[j].item()) not in edges_set:
@@ -92,31 +91,30 @@ def construct_negative_graph(graph, k, etype):
             if len(neg_src) == (i + 1) * k:
                 break
     
-    # 创建负图
+    # Create a negative graph
     return dgl.heterograph(
         {etype: (torch.tensor(neg_src), torch.tensor(neg_dst))},
         num_nodes_dict={ntype: graph.number_of_nodes(ntype) for ntype in graph.ntypes})
 
 
-
 def linkrecon_loss(pos_score, neg_score):
-    # 确定较小的大小
+    # Determine the smaller size
     min_size = min(pos_score.size(0), neg_score.size(0))
     
-    # 随机抽样，使大小相同
+    # Randomly sample to make the sizes equal
     pos_indices = torch.randperm(pos_score.size(0))[:min_size]
     neg_indices = torch.randperm(neg_score.size(0))[:min_size]
     
-    # 根据索引选择相同大小的样本
+    # Select samples with equal size based on indices
     pos_score = pos_score[pos_indices]
     neg_score = neg_score[neg_indices]
-    # 计算 margin loss
+    # Calculate margin loss
     margin_loss = 1 + neg_score.unsqueeze(1) - pos_score.unsqueeze(1)
     
-    # 使用 clamp 函数将小于 0 的值限制为 0
+    # Use clamp to restrict values smaller than 0 to 0
     margin_loss = torch.clamp(margin_loss, min=0)
     
-    # 计算损失的均值
+    # Calculate the mean of the loss
     loss = torch.mean(margin_loss)
     
     return loss
@@ -132,7 +130,7 @@ def lossloss(linkmodel, graph, k, embeddings, etype):
     return link_lossloss
 
 
-def Fold(folds,fold):
+def Fold(folds, fold):
     
     test_idx = folds[fold]
     train_idx = np.concatenate([folds[i] for i in range(5) if i != fold])
@@ -140,7 +138,7 @@ def Fold(folds,fold):
     return test_idx, train_idx
 
 
-# 定义节点特征对齐的自编码器
+# Define a node feature alignment autoencoder
 class FeatureAlignAutoEncoder(nn.Module):
     def __init__(self, input_dim, hidden_dim):
         super(FeatureAlignAutoEncoder, self).__init__()
@@ -158,7 +156,7 @@ class FeatureAlignAutoEncoder(nn.Module):
         decoded = self.decoder(encoded)
         return encoded, decoded
 
-# 定义边特征对齐的自编码器
+# Define an edge feature alignment autoencoder
 class EdgeAlignAutoEncoder(nn.Module):
     def __init__(self, input_dim, hidden_dim):
         super(EdgeAlignAutoEncoder, self).__init__()
@@ -176,7 +174,7 @@ class EdgeAlignAutoEncoder(nn.Module):
         decoded = self.decoder(encoded)
         return encoded, decoded
 
-# 定义结构对齐的自编码器
+# Define a structural alignment autoencoder
 class StructureAlignAutoEncoder(nn.Module):
     def __init__(self, input_dim, hidden_dim):
         super(StructureAlignAutoEncoder, self).__init__()
@@ -193,23 +191,23 @@ class StructureAlignAutoEncoder(nn.Module):
         decoded = self.decoder(encoded)
         return encoded, decoded
 
-# 获取高密度点
+# Get high-density points
 def get_high_density_points(features, num_points):
     if features.size(0) == 0:
-        return features  # 如果没有特征，返回空的特征
+        return features  # If there are no features, return empty features
 
     kde = KernelDensity(kernel='gaussian', bandwidth=0.5)
     kde.fit(features.detach().numpy())
     densities = kde.score_samples(features.detach().numpy())
     
-    # 处理请求高密度点数量超过特征数量的情况
+    # Handle the case where the requested number of high-density points exceeds the number of features
     num_points = min(num_points, features.size(0))
     
     indices = torch.tensor(densities).argsort(descending=True)[:num_points]
     return features[indices]
 
 
-# 计算对齐损失
+# Calculate the alignment loss
 def calculate_alignment_loss(source_feats, target_feats):
     euclidean_loss = F.mse_loss(source_feats, target_feats)
     cos_sim = F.cosine_similarity(source_feats, target_feats, dim=-1)
@@ -217,49 +215,48 @@ def calculate_alignment_loss(source_feats, target_feats):
     return euclidean_loss + cosine_loss
 
 
-
 def get_common_path_types(source_meta_paths, target_meta_paths):
     """
-    计算源域和目标域元路径类型的交集。
+    Compute the intersection of the source domain and target domain meta-path types.
     
-    参数:
-    - source_meta_paths: 源域的元路径样本列表
-    - target_meta_paths: 目标域的元路径样本列表
+    Parameters:
+    - source_meta_paths: A list of meta-path samples from the source domain
+    - target_meta_paths: A list of meta-path samples from the target domain
     
-    返回:
-    - common_path_types: 源域和目标域共有的元路径类型集合
+    Returns:
+    - common_path_types: A set of common meta-path types between the source and target domains
     """
-    # 提取源域和目标域的元路径类型集合
+    # Extract the meta-path types from the source and target domains
     source_path_types = set(sample[0] for sample in source_meta_paths)
     target_path_types = set(sample[0] for sample in target_meta_paths)
 
-    # 取交集，确保仅对共有的元路径类型计算损失
+    # Take the intersection to ensure loss is computed only for common meta-path types
     common_path_types = source_path_types.intersection(target_path_types)
     return common_path_types
 
 
 def sample_meta_paths(graph, node_representations, two_hop_paths, common_path_types=None):
     """
-    生成图中元路径样本及其特征，支持按交集过滤元路径类型。
+    Generate meta-path samples and their features from the graph, with optional filtering by common path types.
     
-    参数:
-    - graph: 图对象
-    - node_representations: 节点的特征字典
-    - two_hop_paths: 元路径类型列表
-    - common_path_types: 元路径类型的交集（可选），若指定则仅生成交集中元路径类型的样本
+    Parameters:
+    - graph: The graph object
+    - node_representations: A dictionary of node features
+    - two_hop_paths: A list of meta-path types
+    - common_path_types: The intersection of meta-path types (optional), only samples from the intersection will be generated
     
-    返回:
-    - meta_path_samples: 包含元路径类型和特征的样本列表
+    Returns:
+    - meta_path_samples: A list of samples containing the meta-path type and its features
     """
     meta_path_samples = []
     for start_node_type, relation1, mid_node_type, relation2, end_node_type in two_hop_paths:
-        # 定义元路径类型
+        # Define the meta-path type
         path_type = (start_node_type, relation1, mid_node_type, relation2, end_node_type)
-        # 检查该元路径类型是否在交集中
+        # Check if the meta-path type is in the intersection
         if common_path_types and path_type not in common_path_types:
-            continue  # 跳过不在交集中的元路径类型
+            continue  # Skip meta-path types not in the intersection
 
-        # 生成元路径样本及特征
+        # Generate meta-path samples and their features
         start_nodes = graph.nodes(start_node_type)
         metapath = [relation1, relation2]
         traces, _ = dgl.sampling.random_walk(graph, nodes=start_nodes, metapath=metapath)
@@ -270,7 +267,7 @@ def sample_meta_paths(graph, node_representations, two_hop_paths, common_path_ty
                 mid_feature = node_representations[mid_node_type][trace[1].item()]
                 end_feature = node_representations[end_node_type][trace[2].item()]
                 concatenated_feature = torch.cat((start_feature, mid_feature, end_feature))
-                # 将元路径类型和特征一起保存
+                # Save the meta-path type and features together
                 meta_path_samples.append((path_type, concatenated_feature))
 
     return meta_path_samples
@@ -289,6 +286,3 @@ two_hop_paths = [
     ('drug', 'DT', 'target', 'TC', 'cell'),
     ('drug', 'DT', 'target', 'TD', 'drug'),
     ('drug', 'DT', 'target', 'TT1', 'target')]
-
-
-
