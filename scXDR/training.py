@@ -55,7 +55,7 @@ def train_model(S1, S2, epochs):
             feature_align_loss = 0
             structure_align_loss = 0
     
-            # Step 1: Feature alignment, update node features and store in new feature dictionary
+            # Feature alignment, update node features and store in new feature dictionary
             new_source_features = {}
             new_target_features = {}
         
@@ -293,4 +293,93 @@ def train_model(S1, S2, epochs):
             print(f"Feature Align Loss: {feature_align_loss.item():.4f}")
             print(f"Structure Align Loss: {structure_align_loss.item():.4f}")
             print(f"Link Reconstruction: {linkloss.item():.4f}")
-            print(f"Edge Prediction Loss: {edge
+            print(f"Edge Prediction Loss: {edge_prediction_loss.item():.4f}")
+            print(f"Total Loss: {total_loss.item():.4f}")
+            
+            print(f"Training - AUC: {train_results['AUC']:.4f}, AUPR: {train_results['AUPR']:.4f}, "
+                      f"Accuracy: {train_results['Accuracy']:.4f}, Precision: {train_results['Precision']:.4f}, "
+                      f"F1 Score: {train_results['F1 Score']:.4f}, Optimal Threshold: {train_results['Optimal Threshold']:.4f}\n")
+    
+                 # Check if early stopping criteria are met
+            if train_results['AUC'] > 0.99 and train_results['AUPR'] > 0.99 and train_results['Accuracy'] > 0.99:
+                 print("AUC and AUPR both exceed 0.99. Stopping fold training.\n")
+                 break  # Exit the current fold loop
+    
+        # After each epoch, compute evaluation metrics for source and target domain test sets
+        # Source domain test set evaluation
+        auc, aupr, acc, precision, f1, optimal_threshold, y_prob, y_true = evaluate_model(predictor, new_source_features, source_pos_graph, source_neg_graph)
+        source_results_df.loc[epoch] = [epoch + 1, auc, aupr, acc, precision, f1, optimal_threshold]
+    
+        # Target domain test set evaluation
+        auc, aupr, acc, precision, f1, optimal_threshold, y_prob, y_true = evaluate_model(predictor, new_target_features, target_pos_graph, target_neg_graph)
+        target_results_df.loc[epoch] = [epoch + 1, auc, aupr, acc, precision, f1, optimal_threshold]
+        
+        pred_true_df = pd.DataFrame({f'y_pred_epoch{epoch+1}': y_prob, 
+                                     f'y_true_epoch{epoch+1}': y_true})
+        all_pred_true_dfs.append(pred_true_df)  ### List format
+        
+        if epoch == epochs-1:
+            # Plot the score scatter plot
+            plt.figure(figsize=(10, 6))
+            plt.scatter(range(len(y_prob)), y_prob, 
+                        c=y_true, label='Score')
+            plt.colorbar(label='True Label')  # Add color bar for labels (0 or 1)
+            plt.xlabel('Sample Index')
+            plt.ylabel('Predicted Score')
+            plt.title('Predicted Scores with True Labels')
+            plt.show()
+
+        # Print evaluation results
+        print(f"Source Domain - Epoch {epoch+1}/{epochs}")
+        print(f"AUC: {source_results_df.loc[epoch, 'AUC']:.4f}, AUPR: {source_results_df.loc[epoch, 'AUPR']:.4f}, "
+              f"Accuracy: {source_results_df.loc[epoch, 'Accuracy']:.4f}, Precision: {source_results_df.loc[epoch, 'Precision']:.4f}, "
+              f"F1 Score: {source_results_df.loc[epoch, 'F1 Score']:.4f}, Optimal Threshold: {source_results_df.loc[epoch, 'Optimal Threshold']:.4f}")
+    
+        print(f"Target Domain - Epoch {epoch+1}/{epochs}")
+        print(f"AUC: {target_results_df.loc[epoch, 'AUC']:.4f}, AUPR: {target_results_df.loc[epoch, 'AUPR']:.4f}, "
+              f"Accuracy: {target_results_df.loc[epoch, 'Accuracy']:.4f}, Precision: {target_results_df.loc[epoch, 'Precision']:.4f}, "
+              f"F1 Score: {target_results_df.loc[epoch, 'F1 Score']:.4f}, Optimal Threshold: {target_results_df.loc[epoch, 'Optimal Threshold']:.4f}\n")
+        
+        # Save the result tables, including S1 and S2 identifiers
+        source_results_df.to_csv(f"{tables_subdir}/source_results_{S1}_{S2}.csv", index=False)
+        target_results_df.to_csv(f"{tables_subdir}/target_results_{S1}_{S2}.csv", index=False)
+        
+        # Concatenate all DataFrames and save
+        final_pred_true_df = pd.concat(all_pred_true_dfs, axis=1)
+        final_pred_true_df.to_csv(f"{tables_subdir}/all_epochs_predictions_{S1}_{S2}.csv", index=False)
+        
+        
+        if train_results['AUC'] > 0.99 and train_results['AUPR'] > 0.99 and train_results['Accuracy'] > 0.99:
+            print("AUC and AUPR both exceed 0.99. Stopping epoch training.\n")
+            break  # Exit all loops
+    
+    # After training and testing, record end time
+    end_time = time.time()
+    end_time_readable = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(end_time))
+    
+    # Calculate total runtime
+    elapsed_time = end_time - start_time
+    elapsed_hours = int(elapsed_time // 3600)
+    elapsed_minutes = int((elapsed_time % 3600) // 60)
+    elapsed_seconds = int(elapsed_time % 60)
+    
+    # Output total runtime
+    print(f"Training completed in {elapsed_hours}h {elapsed_minutes}m {elapsed_seconds}s.\n")
+    
+    # Save start time, end time, and elapsed time (seconds and formatted) to the table folder
+    with open(f"{tables_subdir}/training_time_{S1}_{S2}.txt", "w") as f:
+        f.write(f"Training started at: {start_time_readable}\n")
+        f.write(f"Training completed at: {end_time_readable}\n")
+        f.write(f"Total time elapsed (formatted): {elapsed_hours}h {elapsed_minutes}m {elapsed_seconds}s.\n")
+        f.write(f"Total time elapsed (seconds): {elapsed_time:.2f} seconds\n")
+    
+    
+    # Save model parameters, including S1 and S2 identifiers
+    torch.save(gcn_model.state_dict(), f"{models_subdir}/gcn_model_{S1}_{S2}.pth")
+    torch.save(feature_aligners.state_dict(), f"{models_subdir}/feature_aligners_{S1}_{S2}.pth")
+    torch.save(edge_aligners.state_dict(), f"{models_subdir}/edge_aligners_{S1}_{S2}.pth")
+    torch.save(structure_aligners.state_dict(), f"{models_subdir}/structure_aligners_{S1}_{S2}.pth")
+    torch.save(predictor.state_dict(), f"{models_subdir}/predictor_{S1}_{S2}.pth")
+    torch.save(optimizer.state_dict(), f"{models_subdir}/optimizer_{S1}_{S2}.pth")  # Optional: Save optimizer state
+    
+    print("Training and testing completed.")
