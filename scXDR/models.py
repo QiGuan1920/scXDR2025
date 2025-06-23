@@ -51,9 +51,7 @@ class HeteroMLPPredictor(nn.Module):
         return {'score': y}
 
     def forward(self, graph, h, etype):
-        # h contains the node representations for each edge type computed from
-        # the GNN for heterogeneous graphs defined in the node classification
-        # section (Section 5.1).
+        # h contains the node representations
         with graph.local_scope():
             graph.ndata['h'] = h   # assigns 'h' of all node types in one shot
             graph.apply_edges(self.apply_edges, etype=etype)
@@ -62,8 +60,7 @@ class HeteroMLPPredictor(nn.Module):
 
 class HeteroDotProductPredictor(nn.Module):
     def forward(self, graph, h, etype):
-        # h contains the node representations for each node type computed from
-        # the GNN defined in the previous section (Section 5.1).
+        # h contains the node representations
         with graph.local_scope():
             graph.ndata['h'] = h
             graph.apply_edges(fn.u_dot_v('h', 'h', 'score'), etype=etype)
