@@ -16,7 +16,7 @@ def train_model(S1, S2, epochs):
     start_time_readable = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start_time))
     
     # Set the main directory path for the results
-    results_dir = "C:/Users/78760/Desktop/scADR/Trial_Run/Results"
+    results_dir = "C:/Users/XXX/Desktop/scXDR/Trial_Run/Results"
     S1_S2_dir = f"{results_dir}/{S1}_{S2}"
     # Create S1_S2 folder and its subfolders: tables and models
     tables_subdir = f"{S1_S2_dir}/tables"
@@ -24,7 +24,7 @@ def train_model(S1, S2, epochs):
     os.makedirs(tables_subdir, exist_ok=True)
     os.makedirs(models_subdir, exist_ok=True)
     
-    base_path = 'C:/Users/78760/Desktop/SCDS/Model/Graph'
+    base_path = 'C:/Users/XXX/Desktop/scXDR/Model/Graph'
 
 
     # Initialize tables to record results for each epoch
