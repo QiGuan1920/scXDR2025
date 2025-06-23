@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Nov 14 14:19:29 2024
-
-@author: 78760
-"""
-
 import dgl
 import torch
 import numpy as np
