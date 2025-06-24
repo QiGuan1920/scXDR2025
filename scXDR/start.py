@@ -1,8 +1,8 @@
 
 from training import *
 
-S1, S2 ='GSE108383', 'GSE117872'
+S1, S2 ='GSE140440', 'GSE117872'
 
 epochs = 10
 
-train_model(S1, S2, 10)
+train_model(S1, S2, epochs)
