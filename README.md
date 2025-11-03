@@ -8,7 +8,7 @@
   
 - **Cross-Dataset Prediction**: The model can be applied across different single-cell datasets, enhancing its versatility and applicability in various research scenarios.
 
-- **Comprehensive Integration**: scXDR integrates diverse data types and advanced approaches to improve the prediction of drug responses, offering a powerful tool for cancer research.
+- **End-to-End & User-Friendly**: scXDR is an end-to-end, well-encapsulated framework with simple and efficient function calls, allowing users to smoothly perform drug response prediction.
 
 ## Applications
 
@@ -18,7 +18,7 @@
 
 ## Usage
 
-Please wait for future updates to see detailed instructions on how to use scXDR effectively.
+The example for running the code is in the `Example` folder, including the dataset download link and sample code usage.
 
 ---
 
