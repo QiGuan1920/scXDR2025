@@ -1,0 +1,7 @@
+from training import *
+
+S1, S2 ='source', 'target'
+
+epochs = 10
+
+train_model(S1, S2, epochs)
