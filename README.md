@@ -18,11 +18,11 @@
 
 ## Usage
 
-- The example for running the code is in the 'Example' folder, including the dataset download link and sample code usage.
+- The example for running the code is in the `Example` folder, including the dataset download link and sample code usage.
 
-- The environment information is in the 'Environment' folder, including package versions and server configurations.
+- The environment information is in the `Environment` folder, including package versions and server configurations.
 
-- The model scripts are in the 'scXDR' folder, where 'start.py' is used for the final execution.
+- The model scripts are in the `scXDR` folder, where `start.py` is used for the final execution.
 
 
 ---
