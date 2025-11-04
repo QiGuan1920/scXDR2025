@@ -135,8 +135,8 @@ def train_model(S1, S2, epochs):
                 loss_tgt_edge = criterion(tgt_edge_decoded, target_edge_feats)
                 feature_align_loss += (loss_src_edge + loss_tgt_edge)
             
-                src_high_density_points = get_high_density_points(src_encoded, num_points=10)
-                tgt_high_density_points = get_high_density_points(tgt_encoded, num_points=10)
+                src_high_density_points = get_high_density_points(src_edge_encoded, num_points=10)
+                tgt_high_density_points = get_high_density_points(tgt_edge_encoded, num_points=10)
             
                 # Handle case where the number of high-density points is different between source and target domains
                 min_length = min(src_high_density_points.size(0), tgt_high_density_points.size(0))
@@ -383,3 +383,4 @@ def train_model(S1, S2, epochs):
     torch.save(optimizer.state_dict(), f"{models_subdir}/optimizer_{S1}_{S2}.pth")  # Optional: Save optimizer state
     
     print("Training and testing completed.")
+
