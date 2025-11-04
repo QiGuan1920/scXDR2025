@@ -26,6 +26,7 @@
 
 - The model scripts are in the `scXDR` folder, where `start.py` is used for the final execution.
 
+Please note that this sample dataset is the same one used for the figures shown in the main text of the paper. You can obtain the drug response value for each cell, as well as directly derive the AUC, AUPR, Accuracy, F1 Score, and runtime results.
 
 ---
 
