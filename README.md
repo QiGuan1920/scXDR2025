@@ -1,6 +1,6 @@
 # scXDR: A New Single-Cell Drug Response Prediction Model
 
-**scXDR** is a novel drug response prediction model designed to operate across single-cell datasets. This model leverages advanced methodologies to predict how individual cells in tumor tissues respond to various drugs, providing new insights into personalized medicine and precision oncology.
+**scXDR** is a novel transfer learning–based model for predicting drug responses across single-cell datasets. It leverages advanced methodologies to analyze how individual cells in tumor tissues respond to various drugs, providing new insights into personalized medicine and precision oncology.
 
 ## Key Features
 
@@ -12,7 +12,7 @@
 
 ## Applications
 
-- **Cellular Response:**: scXDR enables the analysis of cellular responses to drugs at the single-cell level, revealing the heterogeneity and dynamic behavior of tumor cells.
+- **Cellular Response:** scXDR enables the analysis of cellular responses to drugs at the single-cell level, revealing the heterogeneity and dynamic behavior of tumor cells.
   
 - **Drug Screening**: The model can be used to screen and evaluate potential therapeutic compounds based on predicted single-cell drug responses.
 
